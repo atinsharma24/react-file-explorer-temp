@@ -7,8 +7,8 @@
  * if the node is a folder, recursively renders its children.
  *
  * Responsibilities:
- * - Render the node with appropriate file/folder icon.
- * - Handle hover state to show inline action buttons (Rename, Delete).
+ * - Render the node with appropriate file/folder icon (blue folders).
+ * - Handle hover state to show inline text actions ("Rename" / "Delete").
  * - Toggle folder expansion on chevron click.
  * - Inline rename mode: swap label for an <input> on "Rename" click.
  * - Inline "New File" / "New Folder" creation inside folders.
@@ -16,7 +16,6 @@
  *
  * Performance Notes:
  * - Uses React.memo to skip re-renders when props are unchanged.
- * - Callback refs for auto-focus on rename input.
  *
  * ============================================================================
  */
@@ -28,8 +27,6 @@ import {
   Folder,
   FolderOpen,
   File,
-  Pencil,
-  Trash2,
   FilePlus,
   FolderPlus,
 } from 'lucide-react';
@@ -72,15 +69,14 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
     const editor = useInlineEditor({ onSubmit: handleChildCreate });
 
     // ── Indent calculation ──────────────────────────────────────────────
-    // Each depth level adds 16px of left padding (matching VS Code's indent).
-    const paddingLeft = depth * 16 + 8;
+    // Each depth level adds 24px of left padding for clear visual hierarchy.
+    const paddingLeft = depth * 24 + 20;
 
     // ── Rename Handlers ─────────────────────────────────────────────────
 
     const handleRenameStart = useCallback(() => {
       setRenameValue(node.name);
       setIsRenaming(true);
-      // Auto-focus happens via the ref callback below.
       setTimeout(() => renameInputRef.current?.select(), 0);
     }, [node.name]);
 
@@ -132,9 +128,9 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
         {/* ─── Node Row ───────────────────────────────────────────────── */}
         <div
           className={`
-            group flex items-center h-[22px] cursor-pointer
-            transition-colors duration-75
-            ${isHovered ? 'bg-ide-hover' : 'hover:bg-ide-hover'}
+            group flex items-center h-[36px] cursor-pointer
+            transition-colors duration-100 pr-4
+            ${isHovered ? 'bg-explorer-hover' : 'hover:bg-explorer-hover'}
           `}
           style={{ paddingLeft: `${paddingLeft}px` }}
           onMouseEnter={() => setIsHovered(true)}
@@ -145,12 +141,12 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
           aria-label={node.name}
         >
           {/* Chevron (folders only) */}
-          <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+          <span className="w-5 h-5 flex items-center justify-center flex-shrink-0 mr-0.5">
             {node.isFolder ? (
               node.isOpen ? (
                 <ChevronDown
                   size={16}
-                  className="text-ide-text-muted transition-transform duration-150"
+                  className="text-explorer-text-secondary"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleToggle();
@@ -159,7 +155,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
               ) : (
                 <ChevronRight
                   size={16}
-                  className="text-ide-text-muted transition-transform duration-150"
+                  className="text-explorer-text-secondary"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleToggle();
@@ -169,16 +165,16 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
             ) : null}
           </span>
 
-          {/* Icon */}
-          <span className="w-4 h-4 flex items-center justify-center mr-1.5 flex-shrink-0">
+          {/* Icon — blue folders, gray files */}
+          <span className="w-5 h-5 flex items-center justify-center mr-2 flex-shrink-0">
             {node.isFolder ? (
               node.isOpen ? (
-                <FolderOpen size={16} className="text-ide-folder" />
+                <FolderOpen size={18} className="text-explorer-folder" />
               ) : (
-                <Folder size={16} className="text-ide-folder" />
+                <Folder size={18} className="text-explorer-folder" />
               )
             ) : (
-              <File size={16} className="text-ide-file" />
+              <File size={18} className="text-explorer-file" />
             )}
           </span>
 
@@ -196,38 +192,40 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
               aria-label={`Rename ${node.name}`}
             />
           ) : (
-            <span className="truncate text-[13px] text-ide-text leading-[22px]">
+            <span
+              className={`
+                truncate text-[14px] leading-[36px]
+                ${node.isFolder ? 'font-semibold text-explorer-text' : 'text-explorer-text'}
+              `}
+            >
               {node.name}
             </span>
           )}
 
-          {/* ─── Inline Actions (visible on hover) ────────────────── */}
+          {/* ─── Inline Actions: text buttons (visible on hover) ──── */}
           {isHovered && !isRenaming && (
-            <div className="ml-auto flex items-center gap-0.5 pr-2 animate-fade-in">
+            <div className="ml-auto flex items-center gap-4 animate-fade-in">
               {/* Folder-specific: add child file / folder */}
               {node.isFolder && (
                 <>
                   <button
-                    className="p-0.5 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
+                    className="text-[12px] text-explorer-text-muted hover:text-explorer-accent transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Expand folder first
                       if (!node.isOpen) toggleFolder(node.id);
                       editor.startCreate('file');
                     }}
-                    title="New File"
                     aria-label={`New file in ${node.name}`}
                   >
                     <FilePlus size={14} />
                   </button>
                   <button
-                    className="p-0.5 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
+                    className="text-[12px] text-explorer-text-muted hover:text-explorer-accent transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!node.isOpen) toggleFolder(node.id);
                       editor.startCreate('folder');
                     }}
-                    title="New Folder"
                     aria-label={`New folder in ${node.name}`}
                   >
                     <FolderPlus size={14} />
@@ -235,30 +233,28 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
                 </>
               )}
 
-              {/* Rename */}
+              {/* Rename — text button */}
               <button
-                className="p-0.5 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
+                className="text-[13px] text-explorer-text-muted hover:text-explorer-accent transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRenameStart();
                 }}
-                title="Rename"
                 aria-label={`Rename ${node.name}`}
               >
-                <Pencil size={14} />
+                Rename
               </button>
 
-              {/* Delete */}
+              {/* Delete — text button */}
               <button
-                className="p-0.5 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-danger transition-colors"
+                className="text-[13px] text-explorer-text-muted hover:text-explorer-danger transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete();
                 }}
-                title="Delete"
                 aria-label={`Delete ${node.name}`}
               >
-                <Trash2 size={14} />
+                Delete
               </button>
             </div>
           )}
@@ -270,14 +266,14 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
             {/* Inline creation input (appears at top of children list) */}
             {editor.isCreating && (
               <div
-                className="flex items-center h-[22px]"
-                style={{ paddingLeft: `${paddingLeft + 16}px` }}
+                className="flex items-center h-[36px]"
+                style={{ paddingLeft: `${paddingLeft + 24}px` }}
               >
-                <span className="w-4 h-4 flex items-center justify-center mr-1.5 flex-shrink-0">
+                <span className="w-5 h-5 flex items-center justify-center mr-2 flex-shrink-0">
                   {editor.isCreating === 'folder' ? (
-                    <Folder size={16} className="text-ide-folder" />
+                    <Folder size={18} className="text-explorer-folder" />
                   ) : (
-                    <File size={16} className="text-ide-file" />
+                    <File size={18} className="text-explorer-file" />
                   )}
                 </span>
                 <input

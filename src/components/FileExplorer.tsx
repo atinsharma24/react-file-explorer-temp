@@ -1,22 +1,20 @@
 /**
  * ============================================================================
- * FileExplorer.tsx — Main Sidebar Panel
+ * FileExplorer.tsx — Main File Explorer Panel
  * ============================================================================
  *
- * Top-level container for the file explorer. Renders:
- *   1. A branded header with the project name.
- *   2. Root-level "New File" and "New Folder" action buttons.
+ * Top-level container styled as a macOS-window–like panel:
+ *   1. A title bar with traffic-light dots and centered "File Explorer" title.
+ *   2. Two prominent action buttons: "+ New File" (solid blue) and
+ *      "+ New Folder" (outlined blue).
  *   3. The recursive tree of TreeNodeComponents.
  *   4. An inline input for root-level item creation.
- *
- * This component reads the tree state from TreeContext and maps over
- * root-level nodes, delegating individual rendering to TreeNodeComponent.
  *
  * ============================================================================
  */
 
 import React, { useCallback } from 'react';
-import { FilePlus, FolderPlus, File, Folder, ChevronDown } from 'lucide-react';
+import { File, Folder } from 'lucide-react';
 import { useTree } from '../context/TreeContext';
 import { createNode } from '../utils/treeHelpers';
 import { useInlineEditor } from '../hooks/useInlineEditor';
@@ -39,56 +37,74 @@ const FileExplorer: React.FC = () => {
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
-    <aside
-      className="w-[280px] h-screen bg-ide-sidebar flex flex-col border-r border-ide-border"
+    <div
+      className="w-full max-w-[700px] mx-auto flex flex-col bg-explorer-bg rounded-xl overflow-hidden shadow-2xl border border-explorer-border"
+      style={{ height: 'min(90vh, 680px)' }}
       role="navigation"
       aria-label="File Explorer"
     >
-      {/* ─── Header ────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 h-[35px] bg-ide-sidebar-header border-b border-ide-border flex-shrink-0">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-ide-text-muted">
-          Explorer
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            className="p-1 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
-            onClick={() => editor.startCreate('file')}
-            title="New File"
-            aria-label="New root file"
-          >
-            <FilePlus size={16} />
-          </button>
-          <button
-            className="p-1 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
-            onClick={() => editor.startCreate('folder')}
-            title="New Folder"
-            aria-label="New root folder"
-          >
-            <FolderPlus size={16} />
-          </button>
+      {/* ─── macOS-style Title Bar ──────────────────────────────────── */}
+      <div className="flex items-center justify-center relative h-[40px] bg-explorer-header border-b border-explorer-border flex-shrink-0">
+        {/* Traffic-light dots */}
+        <div className="absolute left-4 flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+          <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
+          <span className="w-3 h-3 rounded-full bg-[#28c840]" />
         </div>
+        <span className="text-[13px] font-medium text-explorer-text-secondary">
+          File Explorer
+        </span>
       </div>
 
-      {/* ─── Project Section Header ────────────────────────────────── */}
-      <div className="flex items-center h-[22px] px-2 bg-ide-sidebar text-[11px] font-semibold uppercase tracking-wider text-ide-text-muted">
-        <ChevronDown size={16} className="mr-1 text-ide-text-muted" />
-        <span>Storebox Project</span>
+      {/* ─── Action Buttons ─────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-explorer-border flex-shrink-0">
+        {/* + New File — solid blue */}
+        <button
+          className="
+            inline-flex items-center gap-1.5 px-5 py-2
+            bg-explorer-accent text-white text-[13px] font-semibold
+            rounded-lg hover:bg-explorer-accent-hover
+            transition-colors cursor-pointer
+            shadow-sm
+          "
+          onClick={() => editor.startCreate('file')}
+          aria-label="New root file"
+        >
+          <span className="text-[15px] leading-none">+</span>
+          New File
+        </button>
+
+        {/* + New Folder — outlined blue */}
+        <button
+          className="
+            inline-flex items-center gap-1.5 px-5 py-2
+            bg-transparent text-explorer-accent text-[13px] font-semibold
+            border-2 border-explorer-accent rounded-lg
+            hover:bg-explorer-accent/5
+            transition-colors cursor-pointer
+          "
+          onClick={() => editor.startCreate('folder')}
+          aria-label="New root folder"
+        >
+          <span className="text-[15px] leading-none">+</span>
+          New Folder
+        </button>
       </div>
 
       {/* ─── Tree Content ──────────────────────────────────────────── */}
       <div
-        className="flex-1 overflow-y-auto overflow-x-hidden py-0.5"
+        className="flex-1 overflow-y-auto overflow-x-hidden py-2"
         role="tree"
         aria-label="File tree"
       >
         {/* Root-level inline creation */}
         {editor.isCreating && (
-          <div className="flex items-center h-[22px] pl-2 animate-fade-in">
-            <span className="w-4 h-4 flex items-center justify-center mr-1.5 flex-shrink-0">
+          <div className="flex items-center h-[36px] px-5 animate-fade-in">
+            <span className="w-5 h-5 flex items-center justify-center mr-2 flex-shrink-0">
               {editor.isCreating === 'folder' ? (
-                <Folder size={16} className="text-ide-folder" />
+                <Folder size={18} className="text-explorer-folder" />
               ) : (
-                <File size={16} className="text-ide-file" />
+                <File size={18} className="text-explorer-file" />
               )}
             </span>
             <input
@@ -112,24 +128,25 @@ const FileExplorer: React.FC = () => {
 
         {/* Empty state */}
         {tree.length === 0 && !editor.isCreating && (
-          <div className="flex flex-col items-center justify-center h-32 text-ide-text-muted text-xs">
-            <p className="mb-2">No files or folders</p>
-            <p className="text-[11px]">
+          <div className="flex flex-col items-center justify-center h-40 text-explorer-text-muted text-sm">
+            <p className="mb-2">No files or folders yet</p>
+            <p className="text-xs">
               Click{' '}
-              <span className="text-ide-accent">+ New File</span> or{' '}
-              <span className="text-ide-accent">+ New Folder</span> above.
+              <span className="text-explorer-accent font-medium">+ New File</span> or{' '}
+              <span className="text-explorer-accent font-medium">+ New Folder</span> above
+              to get started.
             </p>
           </div>
         )}
       </div>
 
       {/* ─── Footer ────────────────────────────────────────────────── */}
-      <div className="flex items-center h-[22px] px-4 bg-ide-sidebar-header border-t border-ide-border flex-shrink-0">
-        <span className="text-[10px] text-ide-text-muted">
+      <div className="flex items-center h-[32px] px-5 bg-explorer-header border-t border-explorer-border flex-shrink-0">
+        <span className="text-[11px] text-explorer-text-muted">
           {countItems(tree)} items
         </span>
       </div>
-    </aside>
+    </div>
   );
 };
 
