@@ -36,16 +36,18 @@ export interface TreeNode {
 /**
  * Supported CRUD actions dispatched through the tree context.
  *
- * - INSERT_NODE:  Adds a new child node under a specified parent folder.
- * - DELETE_NODE:  Removes a node (and its entire subtree) by ID.
- * - RENAME_NODE:  Updates the `name` field of a node by ID.
+ * - INSERT_NODE:   Adds a new child node under a specified parent folder.
+ * - DELETE_NODE:   Removes a node (and its entire subtree) by ID.
+ * - RENAME_NODE:   Updates the `name` field of a node by ID.
  * - TOGGLE_FOLDER: Flips the `isOpen` state of a folder node.
+ * - ADD_ROOT_NODE: Appends a new node at the root level of the tree.
  */
 export type TreeAction =
   | { type: 'INSERT_NODE'; payload: { parentId: string; node: TreeNode } }
   | { type: 'DELETE_NODE'; payload: { nodeId: string } }
   | { type: 'RENAME_NODE'; payload: { nodeId: string; newName: string } }
-  | { type: 'TOGGLE_FOLDER'; payload: { nodeId: string } };
+  | { type: 'TOGGLE_FOLDER'; payload: { nodeId: string } }
+  | { type: 'ADD_ROOT_NODE'; payload: { node: TreeNode } };
 
 /**
  * Shape of the value provided by the TreeContext.

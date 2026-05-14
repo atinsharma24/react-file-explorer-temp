@@ -25,20 +25,8 @@
  */
 
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
-import type { TreeNode, TreeContextValue } from '../types';
+import type { TreeNode, TreeAction, TreeContextValue } from '../types';
 import * as helpers from '../utils/treeHelpers';
-
-/**
- * Extended action type that includes root-level insertion.
- * The public `TreeAction` union doesn't include this because
- * it's an internal implementation detail of this provider.
- */
-type InternalAction =
-  | { type: 'INSERT_NODE'; payload: { parentId: string; node: TreeNode } }
-  | { type: 'DELETE_NODE'; payload: { nodeId: string } }
-  | { type: 'RENAME_NODE'; payload: { nodeId: string; newName: string } }
-  | { type: 'TOGGLE_FOLDER'; payload: { nodeId: string } }
-  | { type: 'ADD_ROOT_NODE'; payload: { node: TreeNode } };
 
 // ─── Initial Demo Data ─────────────────────────────────────────────────────
 // Pre-populated tree to demonstrate nested folders and files.
@@ -198,7 +186,7 @@ const initialTree: TreeNode[] = [
  * Each case returns a brand-new root array reference, triggering
  * React's reconciliation only for changed subtrees.
  */
-function treeReducer(state: TreeNode[], action: InternalAction): TreeNode[] {
+function treeReducer(state: TreeNode[], action: TreeAction): TreeNode[] {
   switch (action.type) {
     case 'INSERT_NODE':
       return helpers.insertNode(state, action.payload.parentId, action.payload.node);
@@ -210,8 +198,8 @@ function treeReducer(state: TreeNode[], action: InternalAction): TreeNode[] {
       return helpers.toggleFolder(state, action.payload.nodeId);
     case 'ADD_ROOT_NODE': {
       const { node } = action.payload;
-      // Folders go to the top; files append at the end.
-      return node.isFolder ? [node, ...state] : [...state, node];
+      // Append and let sortNodes enforce canonical ordering at the root.
+      return helpers.sortNodes([...state, node]);
     }
     default:
       return state;

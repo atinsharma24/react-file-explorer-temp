@@ -15,49 +15,26 @@
  * ============================================================================
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { FilePlus, FolderPlus, File, Folder, ChevronDown } from 'lucide-react';
 import { useTree } from '../context/TreeContext';
 import { createNode } from '../utils/treeHelpers';
+import { useInlineEditor } from '../hooks/useInlineEditor';
 import TreeNodeComponent from './TreeNode';
 
 const FileExplorer: React.FC = () => {
   const { tree, addRootNode } = useTree();
 
-  // ── Root-level creation state ───────────────────────────────────────
-  const [isCreating, setIsCreating] = useState<'file' | 'folder' | null>(null);
-  const [newItemName, setNewItemName] = useState('');
-  const createInputRef = useRef<HTMLInputElement>(null);
-
-  // ── Root Creation Handlers ──────────────────────────────────────────
-
-  const handleCreateStart = useCallback((type: 'file' | 'folder') => {
-    setIsCreating(type);
-    setNewItemName('');
-    setTimeout(() => createInputRef.current?.focus(), 0);
-  }, []);
-
-  const handleCreateSubmit = useCallback(() => {
-    const trimmed = newItemName.trim();
-    if (trimmed && isCreating) {
-      const newNode = createNode(trimmed, isCreating === 'folder');
+  // ── Root-level inline creation via shared hook ──────────────────────
+  const handleRootCreate = useCallback(
+    (name: string, type: 'file' | 'folder') => {
+      const newNode = createNode(name, type === 'folder');
       addRootNode(newNode);
-    }
-    setIsCreating(null);
-    setNewItemName('');
-  }, [newItemName, isCreating, addRootNode]);
-
-  const handleCreateKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        handleCreateSubmit();
-      } else if (e.key === 'Escape') {
-        setIsCreating(null);
-        setNewItemName('');
-      }
     },
-    [handleCreateSubmit],
+    [addRootNode],
   );
+
+  const editor = useInlineEditor({ onSubmit: handleRootCreate });
 
   // ── Render ──────────────────────────────────────────────────────────
 
@@ -75,7 +52,7 @@ const FileExplorer: React.FC = () => {
         <div className="flex items-center gap-1">
           <button
             className="p-1 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
-            onClick={() => handleCreateStart('file')}
+            onClick={() => editor.startCreate('file')}
             title="New File"
             aria-label="New root file"
           >
@@ -83,7 +60,7 @@ const FileExplorer: React.FC = () => {
           </button>
           <button
             className="p-1 rounded hover:bg-ide-active text-ide-text-muted hover:text-ide-text-bright transition-colors"
-            onClick={() => handleCreateStart('folder')}
+            onClick={() => editor.startCreate('folder')}
             title="New Folder"
             aria-label="New root folder"
           >
@@ -105,25 +82,25 @@ const FileExplorer: React.FC = () => {
         aria-label="File tree"
       >
         {/* Root-level inline creation */}
-        {isCreating && (
+        {editor.isCreating && (
           <div className="flex items-center h-[22px] pl-2 animate-fade-in">
             <span className="w-4 h-4 flex items-center justify-center mr-1.5 flex-shrink-0">
-              {isCreating === 'folder' ? (
+              {editor.isCreating === 'folder' ? (
                 <Folder size={16} className="text-ide-folder" />
               ) : (
                 <File size={16} className="text-ide-file" />
               )}
             </span>
             <input
-              ref={createInputRef}
+              ref={editor.inputRef}
               type="text"
               className="inline-edit-input"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              onBlur={handleCreateSubmit}
-              onKeyDown={handleCreateKeyDown}
-              placeholder={isCreating === 'folder' ? 'Folder name…' : 'File name…'}
-              aria-label={`New root ${isCreating} name`}
+              value={editor.value}
+              onChange={(e) => editor.setValue(e.target.value)}
+              onBlur={editor.submitCreate}
+              onKeyDown={editor.handleKeyDown}
+              placeholder={editor.isCreating === 'folder' ? 'Folder name…' : 'File name…'}
+              aria-label={`New root ${editor.isCreating} name`}
             />
           </div>
         )}
@@ -134,7 +111,7 @@ const FileExplorer: React.FC = () => {
         ))}
 
         {/* Empty state */}
-        {tree.length === 0 && !isCreating && (
+        {tree.length === 0 && !editor.isCreating && (
           <div className="flex flex-col items-center justify-center h-32 text-ide-text-muted text-xs">
             <p className="mb-2">No files or folders</p>
             <p className="text-[11px]">

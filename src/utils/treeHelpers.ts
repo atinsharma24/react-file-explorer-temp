@@ -56,11 +56,10 @@ export function createNode(name: string, isFolder: boolean): TreeNode {
 /**
  * Insert a new child node under the parent identified by `parentId`.
  *
- * The function performs a recursive DFS. When the parent is found:
- *   - Folders are inserted at the **beginning** of the children array.
- *   - Files are inserted **after** the last folder (maintaining the
- *     "folders first" convention common in file explorers).
- *   - The parent folder is automatically expanded (`isOpen: true`).
+ * The function performs a recursive DFS. When the parent is found the new
+ * node is appended to the children array which is then passed through
+ * `sortNodes` to maintain the canonical "folders first, alphabetical"
+ * ordering. The parent folder is automatically expanded (`isOpen: true`).
  *
  * If `parentId` is not found, the original tree is returned unchanged.
  *
@@ -76,10 +75,8 @@ export function insertNode(
 ): TreeNode[] {
   return tree.map((node) => {
     if (node.id === parentId) {
-      // Found the parent — insert child, keeping "folders first" ordering.
-      const updatedChildren = newNode.isFolder
-        ? [newNode, ...node.children]
-        : [...node.children, newNode];
+      // Append the new child and let sortNodes enforce canonical ordering.
+      const updatedChildren = sortNodes([...node.children, newNode]);
 
       return {
         ...node,
@@ -128,6 +125,9 @@ export function deleteNode(tree: TreeNode[], nodeId: string): TreeNode[] {
 /**
  * Rename the node identified by `nodeId`.
  *
+ * After renaming, the **parent's** children array is re-sorted via
+ * `sortNodes` so that alphabetical ordering is preserved.
+ *
  * @param tree    - The current root-level array of nodes.
  * @param nodeId  - The ID of the node to rename.
  * @param newName - The new display name.
@@ -138,7 +138,7 @@ export function renameNode(
   nodeId: string,
   newName: string,
 ): TreeNode[] {
-  return tree.map((node) => {
+  const renamed = tree.map((node) => {
     if (node.id === nodeId) {
       return { ...node, name: newName };
     }
@@ -146,12 +146,16 @@ export function renameNode(
     if (node.isFolder && node.children.length > 0) {
       const updatedChildren = renameNode(node.children, nodeId, newName);
       if (updatedChildren !== node.children) {
-        return { ...node, children: updatedChildren };
+        // Re-sort children after a descendant was renamed.
+        return { ...node, children: sortNodes(updatedChildren) };
       }
     }
 
     return node;
   });
+
+  // If a root-level node was renamed, re-sort the root array too.
+  return renamed !== tree ? sortNodes(renamed) : renamed;
 }
 
 /**

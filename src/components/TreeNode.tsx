@@ -36,6 +36,7 @@ import {
 import type { TreeNode } from '../types';
 import { useTree } from '../context/TreeContext';
 import { createNode } from '../utils/treeHelpers';
+import { useInlineEditor } from '../hooks/useInlineEditor';
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -56,11 +57,19 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
     const [isHovered, setIsHovered] = useState(false);
     const [isRenaming, setIsRenaming] = useState(false);
     const [renameValue, setRenameValue] = useState(node.name);
-    const [isCreating, setIsCreating] = useState<'file' | 'folder' | null>(null);
-    const [newItemName, setNewItemName] = useState('');
 
     const renameInputRef = useRef<HTMLInputElement>(null);
-    const createInputRef = useRef<HTMLInputElement>(null);
+
+    // ── Inline creation via shared hook ─────────────────────────────────
+    const handleChildCreate = useCallback(
+      (name: string, type: 'file' | 'folder') => {
+        const newNode = createNode(name, type === 'folder');
+        insertNode(node.id, newNode);
+      },
+      [insertNode, node.id],
+    );
+
+    const editor = useInlineEditor({ onSubmit: handleChildCreate });
 
     // ── Indent calculation ──────────────────────────────────────────────
     // Each depth level adds 16px of left padding (matching VS Code's indent).
@@ -92,37 +101,6 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
         }
       },
       [handleRenameSubmit],
-    );
-
-    // ── Inline Create Handlers ──────────────────────────────────────────
-
-    const handleCreateStart = useCallback((type: 'file' | 'folder') => {
-      setIsCreating(type);
-      setNewItemName('');
-      // Ensure folder is open so the new input is visible
-      setTimeout(() => createInputRef.current?.focus(), 0);
-    }, []);
-
-    const handleCreateSubmit = useCallback(() => {
-      const trimmed = newItemName.trim();
-      if (trimmed && isCreating) {
-        const newNode = createNode(trimmed, isCreating === 'folder');
-        insertNode(node.id, newNode);
-      }
-      setIsCreating(null);
-      setNewItemName('');
-    }, [newItemName, isCreating, node.id, insertNode]);
-
-    const handleCreateKeyDown = useCallback(
-      (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-          handleCreateSubmit();
-        } else if (e.key === 'Escape') {
-          setIsCreating(null);
-          setNewItemName('');
-        }
-      },
-      [handleCreateSubmit],
     );
 
     // ── Delete Handler ──────────────────────────────────────────────────
@@ -235,7 +213,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
                       e.stopPropagation();
                       // Expand folder first
                       if (!node.isOpen) toggleFolder(node.id);
-                      handleCreateStart('file');
+                      editor.startCreate('file');
                     }}
                     title="New File"
                     aria-label={`New file in ${node.name}`}
@@ -247,7 +225,7 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!node.isOpen) toggleFolder(node.id);
-                      handleCreateStart('folder');
+                      editor.startCreate('folder');
                     }}
                     title="New Folder"
                     aria-label={`New folder in ${node.name}`}
@@ -290,28 +268,28 @@ const TreeNodeComponent: React.FC<TreeNodeComponentProps> = React.memo(
         {node.isFolder && node.isOpen && (
           <div className="animate-slide-down" role="group">
             {/* Inline creation input (appears at top of children list) */}
-            {isCreating && (
+            {editor.isCreating && (
               <div
                 className="flex items-center h-[22px]"
                 style={{ paddingLeft: `${paddingLeft + 16}px` }}
               >
                 <span className="w-4 h-4 flex items-center justify-center mr-1.5 flex-shrink-0">
-                  {isCreating === 'folder' ? (
+                  {editor.isCreating === 'folder' ? (
                     <Folder size={16} className="text-ide-folder" />
                   ) : (
                     <File size={16} className="text-ide-file" />
                   )}
                 </span>
                 <input
-                  ref={createInputRef}
+                  ref={editor.inputRef}
                   type="text"
                   className="inline-edit-input"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  onBlur={handleCreateSubmit}
-                  onKeyDown={handleCreateKeyDown}
-                  placeholder={isCreating === 'folder' ? 'Folder name…' : 'File name…'}
-                  aria-label={`New ${isCreating} name`}
+                  value={editor.value}
+                  onChange={(e) => editor.setValue(e.target.value)}
+                  onBlur={editor.submitCreate}
+                  onKeyDown={editor.handleKeyDown}
+                  placeholder={editor.isCreating === 'folder' ? 'Folder name…' : 'File name…'}
+                  aria-label={`New ${editor.isCreating} name`}
                 />
               </div>
             )}
