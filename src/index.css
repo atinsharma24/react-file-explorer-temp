@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+/*
+ * ============================================================================
+ * VS Code File Explorer — Global Styles & Custom Theme
+ * ============================================================================
+ * Uses Tailwind CSS v4 with CSS custom properties for theming.
+ * The dark IDE aesthetic is achieved through a carefully curated palette
+ * inspired by VS Code's default dark theme.
+ * ============================================================================
+ */
+
+/* --------------------------------------------------------------------------
+   Custom Theme Tokens
+   -------------------------------------------------------------------------- */
+@theme {
+  --color-ide-bg: #1e1e1e;
+  --color-ide-sidebar: #252526;
+  --color-ide-sidebar-header: #2d2d2d;
+  --color-ide-border: #3c3c3c;
+  --color-ide-text: #cccccc;
+  --color-ide-text-muted: #858585;
+  --color-ide-text-bright: #e7e7e7;
+  --color-ide-accent: #007acc;
+  --color-ide-accent-hover: #1a8ad4;
+  --color-ide-hover: #2a2d2e;
+  --color-ide-active: #37373d;
+  --color-ide-focus-border: #007fd4;
+  --color-ide-input-bg: #3c3c3c;
+  --color-ide-input-border: #5a5a5a;
+  --color-ide-danger: #f44747;
+  --color-ide-danger-hover: #d73a3a;
+  --color-ide-success: #4ec9b0;
+  --color-ide-folder: #dcb67a;
+  --color-ide-file: #8b8b8b;
+  --color-ide-scrollbar: #424242;
+  --color-ide-scrollbar-hover: #4f4f4f;
+  --font-mono: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+  --font-sans: 'Segoe UI', 'Helvetica Neue', 'Arial', sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   Base & Reset
+   -------------------------------------------------------------------------- */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-ide-bg);
+  color: var(--color-ide-text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --------------------------------------------------------------------------
+   Custom Scrollbar (WebKit)
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-ide-scrollbar);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ide-scrollbar-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Utility: Inline edit input (used by TreeNode rename mode)
+   -------------------------------------------------------------------------- */
+.inline-edit-input {
+  background-color: var(--color-ide-input-bg);
+  border: 1px solid var(--color-ide-focus-border);
+  color: var(--color-ide-text-bright);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  padding: 1px 4px;
+  outline: none;
+  border-radius: 2px;
+  width: 100%;
+  min-width: 80px;
+}
+
+.inline-edit-input:focus {
+  border-color: var(--color-ide-focus-border);
+  box-shadow: 0 0 0 1px var(--color-ide-focus-border);
+}
+
+/* --------------------------------------------------------------------------
+   Animation Keyframes
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.2s ease-out;
+}
